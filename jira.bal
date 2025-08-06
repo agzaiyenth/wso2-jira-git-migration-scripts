@@ -2,9 +2,7 @@ import ballerina/http;
 import ballerina/io;
 
 public function processIssue(JiraTicket ticket) returns error? {
-    string ticketBody = string `**Reporter:** ${ticket.reporterName} (${ticket.reporterEmail})<br />**Created On:** ${ticket.createdDate}<br /><br />${ticket.description}<br /><br />**Attachments:**`;
-
-    io:println(ticket.attachments);
+    string ticketBody = string `**Reporter:** ${ticket.reporterName} (${ticket.reporterEmail})<br />**Created On:** ${ticket.createdDate}<br /><br />${ticket.description}<br /><br />**Attachments:** ${ticket.attachments.length()} file(s)`;
 
     json response = check createIssue(
         "agzaiyenth",
@@ -15,17 +13,15 @@ public function processIssue(JiraTicket ticket) returns error? {
         }
     );
     
-    
-
     io:println(string `RESPONSE: ${response.toJsonString()}`);
     int issueNumber = check response.number;
-    _ = check closeIssue("agzaiyenth", "agzaiyenth", issueNumber);
-
+    
+    // Process comments
     foreach Comment comment in ticket.comments {
         string commentBody = string `**On ${comment.created} ${comment.author.displayName} (${comment.author.emailAddress}) Commented:**<br />${comment.body}`;
-        response =  check addComment(
-            "wso2-cs",
-            "internal-project-test",
+        response = check addComment(
+            "agzaiyenth",
+            "agzaiyenth",
             issueNumber,
             {
                 "body": commentBody
@@ -33,14 +29,21 @@ public function processIssue(JiraTicket ticket) returns error? {
         );
     }
 
+    // Process attachments
+    _ = check processIssueAttachments(jiraClient, ticket, "agzaiyenth", "agzaiyenth", issueNumber);
+
+    // Update labels
     response = check updateLabels(
-        "wso2-cs",
-        "internal-project-test",
+        "agzaiyenth",
+        "agzaiyenth",
         issueNumber,
         {
             "labels": ticket.labels
         }
     );
+    
+    // Close the issue
+    _ = check closeIssue("agzaiyenth", "agzaiyenth", issueNumber);
 }
 
 function getAllProjects(http:Client jiraClient) returns JiraProject[]|error {
@@ -136,7 +139,7 @@ function getAllTicketsForProject(http:Client jiraClient, string projectKey) retu
             }
             Comment[] comments = check getCommentsForTicket(jiraClient, key);
 
-            Attachment[] attachments = [];//check getAttachmentsForTicketByFileSystem(jiraClient, projectKey, key);
+            Attachment[] attachments= check getAttachmentsForTicketByFileSystem(jiraClient, projectKey, key);
 
             tickets.push({
                 key: key,
@@ -195,9 +198,17 @@ function getAttachmentsForTicketByFileSystem(http:Client jiraClient, string proj
     string[] attachmentIDs = check getAttachmentIDs("mock_jira_store/attachmentFile", projectId, issueId);
     Attachment[] attachments = [];
     foreach string attachmentId in attachmentIDs {
-        Attachment attachment = check jiraClient->get(string `/attachment/${attachmentId}`);
+        // Note: You'll need to modify this to work with your file system structure
+        // This assumes you have attachment metadata stored locally
+        Attachment attachment = {
+            id: attachmentId,
+            filename: attachmentId, // You may need to get actual filename from filesystem
+            content: string `${jiraApiBaseUrl}/secure/attachment/${attachmentId}/${attachmentId}`,
+            size: 0, // You may want to get actual file size
+            mimeType: "application/octet-stream" // You may want to detect actual MIME type
+        };
         attachments.push(attachment);
     }
-
     return attachments;
 }
+            

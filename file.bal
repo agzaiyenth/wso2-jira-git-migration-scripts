@@ -11,6 +11,8 @@ function getAttachmentIDs(string basePath, string projectId, string ticketId) re
 
     string[] files = [];
     int index = 0;
+    io:println("Checking folder path: ", ticketFolderPath);
+    //ticketFolderPath="/Users/Agzaiyenth/Downloads/wso2-jira-git-migration/test";
     
     if (check file:test(ticketFolderPath, file:EXISTS)) {
         var result = file:readDir(ticketFolderPath);
@@ -26,11 +28,13 @@ function getAttachmentIDs(string basePath, string projectId, string ticketId) re
                 index += 1;
             }
         } else {
+            io:println("Error reading directory: ", result.message());
             return error("Error reading directory: ", result);
         }
-    } else {
-        return error("Ticket folder does not exist.");
-    }
+    } 
+    // else {
+    //     return error("Ticket folder does not exist.");
+    // }
     
     return files;
 }

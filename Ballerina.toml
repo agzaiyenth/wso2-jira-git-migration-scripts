@@ -2,7 +2,7 @@
 org = "ivantha"
 name = "ballerina_git_api_client"
 version = "0.1.0"
-distribution = "2201.4.1"
+distribution = "2201.12.7"
 
 [build-options]
 observabilityIncluded = true
